@@ -15,7 +15,6 @@ IX_PETAL_WIDTH =    3
 IX_IRIS_CLASS =     4
 
 NUM_FEATURES =      5
-NUM_ROWS =          150
 
 # Open file with name filename and parse comma separated values a into 2-d list
 #
@@ -38,7 +37,7 @@ def open_and_parse(filename, features):
             if current_class == "Iris-setosa\n" or current_class == "Iris-setosa":
                 row[IX_IRIS_CLASS]  = IRIS_SETOSA
             
-            if current_class == "Iris-versicolour\n" or current_class == "Iris-versicolour":
+            if current_class == "Iris-versicolor\n" or current_class == "Iris-versicolor":
                 row[IX_IRIS_CLASS]  = IRIS_VERSICOLOUR
                 
             if current_class == "Iris-virginica\n" or current_class == "Iris-virginica":
@@ -52,12 +51,7 @@ features = list()
 
 open_and_parse(DATA_FILENAME, features)
 
-features_without_classes = [[0] * len(features[0])] * len(features)
-classes = []
-for i in range(0, len(features_without_classes)):   
-    classes.append(features[i][IX_IRIS_CLASS])
-    features_without_classes[i] = features[i]
-    features_without_classes[i].pop(IX_IRIS_CLASS)
-
-distance_matrix = knn.compute_distances(features_without_classes)
-knn.predict(features_without_classes, classes, 8)
+ks_to_test = [1, 2, 3, 5, 8, 13]
+for k in ks_to_test:
+    print("k = " + str(k))
+    print(knn.classification_with_cross_validation(features, IX_IRIS_CLASS, k))

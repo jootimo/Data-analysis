@@ -52,6 +52,7 @@ def compute_nearest_neighbors(distance_matrix, ix_row, num_neighbours):
     return(ixs_and_distances[0 : num_neighbours])
 
 
+
 def majority_class(neighbors, classes):
     neighbor_classes = []
     for n in neighbors:
@@ -59,14 +60,28 @@ def majority_class(neighbors, classes):
 
     return(max(set(neighbor_classes), key = neighbor_classes.count))
 
-def predict(data_matrix, target_list, k):
+def predict_class(data_matrix, target_list, i, k):
     distances = compute_distances(data_matrix)
-
-    for i in range(0, len(data_matrix)):
-
-        neighbors = compute_nearest_neighbors(distances, i, k)
-        predicted_class = majority_class(neighbors, target_list)
+    neighbors = compute_nearest_neighbors(distances, i, k)
+    predicted_class = majority_class(neighbors, target_list)
     
-        if predicted_class != target_list[i]:
-            print("OHI MÄN")
+    return(predicted_class)
+
+def classification_with_cross_validation(data, ix_target, k):
+    data_without_targets = [[0] * len(data[0])] * len(data)
+    classes = []
+    rows = len(data_without_targets)
+    for i in range(0, rows):
+        classes.append(data[i][ix_target])
+        data_without_targets[i] = data[i][0 : ix_target]
+
+    misclassifications = 0
+    for i in range(0, rows):
+        distance_matrix = compute_distances(data_without_targets)
+        predicted_class = predict_class(data_without_targets, classes, i, k)
+
+        if(predicted_class != classes[i]):
+            misclassifications += 1
     
+    misclassification_rate = misclassifications / rows
+    return misclassification_rate
