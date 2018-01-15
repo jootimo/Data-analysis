@@ -1,6 +1,6 @@
 import knn
 
-DATA_FILENAME = "iris.data"
+DATA_FILENAME = "data/iris.data"
 
 #Classes as binary values
 IRIS_SETOSA =       0b001
@@ -19,8 +19,9 @@ NUM_FEATURES =      5
 # Open file with name filename and parse comma separated values a into 2-d list
 #
 # @param    filename
-# @param    features    A 2-d list where data values will be stored
-def open_and_parse(filename, features):
+def open_and_parse(filename):
+    data = []
+    
     with open(filename, "r") as filestream:
 
         for line in iter(filestream.readline, ''):
@@ -33,6 +34,7 @@ def open_and_parse(filename, features):
             row[IX_PETAL_LENGTH]  = float(current_line[2])
             row[IX_PETAL_WIDTH]  = float(current_line[3])
             
+            #Transform the class strings into numerical values
             current_class = current_line[4]
             if current_class == "Iris-setosa\n" or current_class == "Iris-setosa":
                 row[IX_IRIS_CLASS]  = IRIS_SETOSA
@@ -44,14 +46,16 @@ def open_and_parse(filename, features):
                 row[IX_IRIS_CLASS]  = IRIS_VIRGINICA
 
 
-            features.append(row)
+            data.append(row)
+    
+    return data
 
 #Open file and read data into memory
-features = list()
+data = open_and_parse(DATA_FILENAME)
 
-open_and_parse(DATA_FILENAME, features)
-
-ks_to_test = [1, 2, 3, 5, 8, 13]
+#Test the performance k-nearest-neighbors with different values of k
+ks_to_test = [1, 2, 3, 5, 8, 13, 21, 34]
 for k in ks_to_test:
     print("k = " + str(k))
-    print(knn.classification_with_cross_validation(features, IX_IRIS_CLASS, k))
+    print("Misclassification rate = " 
+    + str(knn.classification_with_cross_validation(data, IX_IRIS_CLASS, k)))
