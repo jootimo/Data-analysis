@@ -5,6 +5,7 @@ from operator import itemgetter
 #
 # @param    a   list of attribute values
 # @param    b   list of attribute values
+#
 # @return   distance between a and b or -1 if lists have different lenghts 
 def distance(a, b):
     len_a = len(a)
@@ -23,6 +24,7 @@ def distance(a, b):
 #
 # @param    training_data  list of numerical data rows, excluding the attribute to predict
 # @param    test_data      list of the data object to calculate distances to
+#
 # @return   distance list
 def compute_distances(test_data, training_data):
     num_rows = len(training_data)
@@ -40,6 +42,7 @@ def compute_distances(test_data, training_data):
 # @param    test_data       data object to compute distances to
 # @param    training_data   data that the distances are computed to
 # @param    num_neighbors   value of k
+#
 # @return   num_neighbors nearest neighbors of test_data in training_data
 def compute_nearest_neighbors(test_data, training_data, num_neighbors):
     #Compute distances to test_data
@@ -58,6 +61,7 @@ def compute_nearest_neighbors(test_data, training_data, num_neighbors):
 #
 # @param    neighbors   list of (index, distance) pairs
 # @param    classes     list of the correct classes in the training data
+#
 # @return   value of the majority class 
 def majority_class(neighbors, classes):
     neighbor_classes = []
@@ -114,5 +118,5 @@ def classification_with_cross_validation(data, ix_target, k):
             misclassifications += 1
     
     #Calculate and return the misclassification rate 
-    misclassification_rate = misclassifications / rows
+    misclassification_rate = float(misclassifications) / rows
     return misclassification_rate
