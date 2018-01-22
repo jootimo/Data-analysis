@@ -20,6 +20,7 @@ def distance(a, b):
 
         return sqrt(dist)
 
+
 # Compute distances from each data point in training data to that in test data
 #
 # @param    training_data  list of numerical data rows, excluding the attribute to predict
@@ -27,14 +28,17 @@ def distance(a, b):
 #
 # @return   distance list
 def compute_distances(test_data, training_data):
-    num_rows = len(training_data)
 
     distances = []
+    
+    for i in range(0, len(test_data)):
+        row = []
+        for j in range(0, len(training_data)):
+            dist = distance(test_data[i], training_data[j])
+            row.append(dist)
 
-    for i in range(0, num_rows):
-        dist = distance(test_data, training_data[i])
-        distances.append(dist)
-        
+        distances.append(row)
+
     return(distances)
 
 # Compute nearest neighbors of the given data object
@@ -48,14 +52,23 @@ def compute_nearest_neighbors(test_data, training_data, num_neighbors):
     #Compute distances to test_data
     distances = compute_distances(test_data, training_data)
     
-    #Iterate over the distance list and create list of (row index, distance) pairs
-    ixs_and_distances = []
-    for i in range(0, len(distances)):
-        ixs_and_distances.append([i, distances[i]])
 
-    #Sort the list on distances and return first num_neighbors elements
-    ixs_and_distances.sort(key = itemgetter(1))
-    return(ixs_and_distances[0 : num_neighbors])
+    neighbors = []
+    for ix_test_obj in range(0, len(test_data)):
+        #Iterate over the distance list and create list of (row index, distance) pairs
+        ixs_and_distances = []
+        for i in range(0, len(distances[ix_test_obj])):
+            ixs_and_distances.append([ i, distances[ix_test_obj][i] ])
+
+        #Sort the list on distances and return first num_neighbors elements
+        ixs_and_distances.sort(key = itemgetter(1))
+
+        neighbors.append(ixs_and_distances[0 : num_neighbors])
+
+    return(neighbors)
+
+
+# @TODO: After recent changes in distance computations, this classification doesn't work
 
 # Get the majority class in list neighbors
 #
