@@ -4,12 +4,12 @@ from numpy import mean
 
 DATA_FILENAME = "data/Water_data.csv"
 
-IX_MOD1         = 1
-IX_MOD2         = 2
-IX_MOD3         = 3
-IX_C_TOTAL      = 4
-IX_CD           = 5
-IX_PB           = 6
+IX_MOD1         = 0
+IX_MOD2         = 1
+IX_MOD3         = 2
+IX_C_TOTAL      = 3
+IX_CD           = 4
+IX_PB           = 5
 
 
 # Open file with name filename and parse comma separated values a into 2-d list
@@ -147,8 +147,8 @@ data_standardized = stats.zscore(data)
 inputs = []
 outputs = []
 for row in data_standardized:
-    inputs.append(list(row[IX_MOD1:IX_MOD3]))
-    outputs.append(list(row[IX_MOD3:IX_PB]))
+    inputs.append(list(row[IX_MOD1:IX_MOD3 + 1]))
+    outputs.append(list(row[IX_MOD3:IX_PB + 1]))
 
 #Data contains 4 measurements from each sample, 
 #fold those measurements together
