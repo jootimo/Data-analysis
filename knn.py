@@ -75,15 +75,15 @@ def compute_nearest_neighbors(test_data, training_data, num_neighbors):
 
 # Get the majority class in list neighbors
 #
-# @param    neighbors   list of (index, distance) pairs
-# @param    classes     list of the correct classes in the training data
+# @param    neighbor_ixs   list of neighbor indices
+# @param    classes        list of the correct classes in the training data
 #
 # @return   value of the majority class 
-def majority_class(neighbors, classes):
+def majority_class(neighbor_ixs, classes):
     neighbor_classes = []
-    for n in neighbors:
-        neighbor_classes.append(classes[n[0]])
-
+    for n in neighbor_ixs:
+        neighbor_classes.append(classes[n])
+    
     return(max(set(neighbor_classes), key = neighbor_classes.count))
 
 # Predict the class of test data object from it's nearest neighbors in training data
