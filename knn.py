@@ -47,7 +47,7 @@ def compute_distances(test_data, training_data):
 # @param    training_data   data that the distances are computed to
 # @param    num_neighbors   value of k
 #
-# @return   num_neighbors nearest neighbors of test_data in training_data
+# @return   Indices of num_neighbors nearest neighbors of test_data in training_data
 def compute_nearest_neighbors(test_data, training_data, num_neighbors):
     #Compute distances to test_data
     distances = compute_distances(test_data, training_data)
@@ -60,10 +60,13 @@ def compute_nearest_neighbors(test_data, training_data, num_neighbors):
         for i in range(0, len(distances[ix_test_obj])):
             ixs_and_distances.append([ i, distances[ix_test_obj][i] ])
 
-        #Sort the list on distances and return first num_neighbors elements
+        #Sort the list on distances and include only first num_neighbors elements
         ixs_and_distances.sort(key = itemgetter(1))
+        k_nearest = ixs_and_distances[0 : num_neighbors]
 
-        neighbors.append(ixs_and_distances[0 : num_neighbors])
+        #Only return neighbor indices in training_data
+        for n in k_nearest:
+            neighbors.append(n[0])
 
     return(neighbors)
 
