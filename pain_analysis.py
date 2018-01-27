@@ -1,6 +1,6 @@
-import knn 
+import knn
+from numpy import ndarray
 from scipy import stats
-from numpy import mean, std
 
 DATA_FILENAME = "data/painsignals.csv"
 
@@ -13,6 +13,8 @@ IX_GSR          = 5
 IX_RMSCORR      = 6
 IX_RMSORB       = 7
 IX_LABEL        = 8
+
+NUM_NUMERIC_FEATURES = 5
 
 # Open file with name filename and parse comma separated values a into 2-d list
 #
@@ -40,7 +42,7 @@ def open_and_parse(filename):
                     #Cast to correct type
                     if i in [IX_SUBJECT, IX_MEAS_ID, IX_TEST, IX_LABEL]:
                         line[i] = int(line[i])
-                    else:  
+                    else:
                         line[i] = float(line[i])
 
             data.append(line)
@@ -56,6 +58,7 @@ def get_rows_of_subject(subject_id, data):
 
     return rows
 
+
 def get_rows_of_other_subjects(subject_id, data):
     rows = []
     for row in data:
@@ -64,9 +67,10 @@ def get_rows_of_other_subjects(subject_id, data):
 
     return rows
 
+
 def get_subject_ids(data):
     subject_ids = []
-    prev_id = -1 
+    prev_id = -1
     for row in data:
         current_id = row[IX_SUBJECT]
         if current_id != prev_id:
@@ -75,12 +79,14 @@ def get_subject_ids(data):
 
     return subject_ids
 
+
 def get_features(data):
-    features = [] 
+    features = []
     for row in data:
-        features.append(row[IX_HR : IX_RMSORB])
-        
+        features.append(row[IX_HR : IX_RMSORB + 1])
+
     return features
+
 
 def get_labels(data):
     labels = []
@@ -89,37 +95,124 @@ def get_labels(data):
 
     return labels
 
-def cross_validate_per_subject(data, num_neighbors, f_standardize, f_print):
+
+def standardize_features_per_subject(data, ix_features_start, num_features, f_standardize):
+    data_standardized = []
     subject_ids = get_subject_ids(data)
+
     for id in subject_ids:
-        test_data = get_rows_of_subject(id, data)
-        training_data = get_rows_of_other_subjects(id, data)
-        
+        rows = get_rows_of_subject(id, data)
+        features = get_features(rows)
+        features_standardized = f_standardize(features)
+
+        for row_ix in range(0, len(rows)):
+            row_concat = rows[row_ix][0:ix_features_start]
+
+            for feat in features_standardized[row_ix]:
+                row_concat.append(feat)
+
+            row_concat = row_concat + rows[row_ix][ix_features_start + num_features : len(rows[row_ix])]
+            data_standardized.append(row_concat)
+
+    return data_standardized
+
+
+def standardize_features(data, ix_features_start, num_features, f_standardize):
+    data_standardized = []
+
+    features = get_features(data)
+    features_standardized = f_standardize(features)
+
+
+    for row_ix in range(0, len(data)):
+        row_concat = data[row_ix][0:ix_features_start]
+
+        for feat in features_standardized[row_ix]:
+            row_concat.append(feat)
+
+        row_concat = row_concat + data[row_ix][ix_features_start + num_features : len(data[row_ix])]
+        data_standardized.append(row_concat)
+
+    return data_standardized
+
+
+def cross_validate_per_subject(data_matrix, num_neighbors, f_standardize):
+
+    data = standardize_features_per_subject(data_matrix, IX_HR, NUM_NUMERIC_FEATURES, f_standardize)
+
+    subject_ids = get_subject_ids(data)
+
+    for subj_id in subject_ids:
+        test_data = get_rows_of_subject(subj_id, data)
+        training_data = get_rows_of_other_subjects(subj_id, data)
+
+        test_labels = get_labels(test_data)
+        training_labels = get_labels(training_data)
+
+        test_features = get_features(test_data)
+        training_features = get_features(training_data)
+
+        # Get nearest neighbors for every object in test set
+        neighbors = knn.compute_nearest_neighbors(test_features, training_features, num_neighbors)
+
+        predictions = []
+        actuals = []
+        for measurement in range(0, len(neighbors)):
+            prediction = knn.majority_class(neighbors[measurement], training_labels)
+            actual = test_labels[measurement]
+
+            predictions.append(prediction)
+            actuals.append(actual)
+
+        c_ix = knn.c_index(actuals, predictions)
+        print("(" + str(subj_id) + "," + str(c_ix) + ")")
+
+'''
+    for subj_id in subject_ids:
+        misclassifications = 0
+        classifications =  0
+
+        test_data = get_rows_of_subject(subj_id, data)
+        training_data = get_rows_of_other_subjects(subj_id, data)
+
         test_labels = get_labels(test_data)
         training_labels = get_labels(training_data)
         
         test_features = f_standardize(get_features(test_data))
-        training_features = f_standardize(get_features(training_data))
+        training_features = get_features(training_data)
+        for i in range(0, len(training_features)):
+            training_features[i] = f_standardize(training_features[i])
 
+
+        #Get nearest neighbors for every object in test set
         neighbors = knn.compute_nearest_neighbors(test_features, training_features, num_neighbors)
 
-        prediction = knn.majority_class(neighbors, training_labels)
+        predictions = []
+        actuals = []
+        for measurement in range(0, len(neighbors)):
 
-        print("predicted : " + str(prediction))
-        print("actual : " + str(test_labels))
-        
+            prediction = knn.majority_class(neighbors[measurement], training_labels)
+            actual = test_labels[measurement]
 
+            predictions.append(prediction)
+            actuals.append(actual)
 
-
-    
+        c_ix = knn.c_index(actuals, predictions)
+        print("(" + str(subj_id) + "," + str(c_ix) + ")")
+        #print("Classifications :" + str(classifications))
+        #print("Misclassifications :" + str(misclassifications) + "\n")
+   '''
 def print_rows(data):
     for row in data:
         print(row)
 
+def z_score_list(data):
+    standardized = ndarray.tolist(stats.zscore(data.copy()))
+    return standardized
 
 data = open_and_parse(DATA_FILENAME)
-z_score = lambda x: (x - mean(x)) / std(x)
+
 k = 37
 
-cross_validate_per_subject(data, k, z_score, print_rows)
+cross_validate_per_subject(data, k, z_score_list)
 #print(get_rows_of_subject(3, data))

@@ -45,34 +45,6 @@ def open_and_parse(filename):
 
     return data
 
-# Compute C-index for list of predictions
-#
-# @param    true_values         True numeric target values for the data
-# @param    predicted_values    Predicted target values
-def c_index(true_values, predicted_values):
-    n = 0
-    h_sum = 0.0
-
-    for i in range(0, len(true_values)):
-        t = true_values[i]
-        p = predicted_values[i]
-        
-        for j in range(i + 1, len(true_values)):
-            nt = true_values[j]
-            np = predicted_values[j]
-        
-            if (t != nt):
-                n += 1
-                
-                if ((p < np and t < nt) or (p > np and t > nt)):
-                    h_sum += 1
-                elif ((p < np and t > nt) or (p > np and t < np)):
-                    h_sum += 0
-                elif (p == np):
-                    h_sum += 0.5
-    
-    c_idx = h_sum / n
-    return c_idx
 
 # Perform k-nearest-neighbors search with k-fold cross-validation
 # and print c-index for each output attribute
@@ -127,9 +99,9 @@ def regression_with_cross_validation_and_c_index(inputs, outputs, num_folds, k):
             cd_predictions.append(estimate_cd)
             pb_predictions.append(estimate_pb)
 
-    c_ix_c_total = c_index([row[IX_C_TOTAL] for row in outputs], c_total_predictions)
-    c_ix_cd = c_index([row[IX_CD] for row in outputs], cd_predictions)
-    c_ix_pb = c_index([row[IX_PB] for row in outputs], pb_predictions)
+    c_ix_c_total = knn.c_index([row[IX_C_TOTAL] for row in outputs], c_total_predictions)
+    c_ix_cd = knn.c_index([row[IX_CD] for row in outputs], cd_predictions)
+    c_ix_pb = knn.c_index([row[IX_PB] for row in outputs], pb_predictions)
 
     print("C-index for c_totals: " + str(c_ix_c_total))
     print("C-index for cd: " + str(c_ix_cd))

@@ -10,7 +10,7 @@ from operator import itemgetter
 def distance(a, b):
     len_a = len(a)
     len_b = len(b)
-    
+
     if len_a != len_b:
         return(-1)
     else:
@@ -51,8 +51,6 @@ def compute_distances(test_data, training_data):
 def compute_nearest_neighbors(test_data, training_data, num_neighbors):
     #Compute distances to test_data
     distances = compute_distances(test_data, training_data)
-    
-
     neighbors = []
     for ix_test_obj in range(0, len(test_data)):
         #Iterate over the distance list and create list of (row index, distance) pairs
@@ -65,8 +63,11 @@ def compute_nearest_neighbors(test_data, training_data, num_neighbors):
         k_nearest = ixs_and_distances[0 : num_neighbors]
 
         #Only return neighbor indices in training_data
+        neighbors_of_row = []
         for n in k_nearest:
-            neighbors.append(n[0])
+            neighbors_of_row.append(n[0])
+
+        neighbors.append(neighbors_of_row)
 
     return(neighbors)
 
@@ -100,6 +101,37 @@ def predict_class(test_data, training_data, target_list, k):
     predicted_class = majority_class(neighbors, target_list)
     
     return(predicted_class)
+
+
+# Compute C-index for list of predictions
+#
+# @param    true_values         True target values for the data
+# @param    predicted_values    Predicted target values
+def c_index(true_values, predicted_values):
+    n = 0
+    h_sum = 0.0
+
+    for i in range(0, len(true_values)):
+        t = true_values[i]
+        p = predicted_values[i]
+
+        for j in range(i + 1, len(true_values)):
+            nt = true_values[j]
+            np = predicted_values[j]
+
+            if (t != nt):
+                n += 1
+
+                if ((p < np and t < nt) or (p > np and t > nt)):
+                    h_sum += 1
+                elif ((p < np and t > nt) or (p > np and t < np)):
+                    h_sum += 0
+                elif (p == np):
+                    h_sum += 0.5
+
+    c_idx = h_sum / n
+    return c_idx
+
 
 # Perform the k-nearest-neighbors classification with leave-one-out
 # cross-validiation on data
