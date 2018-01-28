@@ -72,8 +72,6 @@ def compute_nearest_neighbors(test_data, training_data, num_neighbors):
     return(neighbors)
 
 
-# @TODO: After recent changes in distance computations, this classification doesn't work
-
 # Get the majority class in list neighbors
 #
 # @param    neighbor_ixs   list of neighbor indices
