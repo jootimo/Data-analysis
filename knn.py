@@ -167,5 +167,8 @@ def c_index(true_values, predicted_values):
                 elif (p == np):
                     h_sum += 0.5
 
+    if n == 0:
+        return 1
+
     c_idx = h_sum / n
     return c_idx
