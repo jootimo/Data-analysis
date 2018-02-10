@@ -1,7 +1,7 @@
 from math import sqrt
 from operator import itemgetter
 from numpy import mean
-
+from collections import Counter
 
 
 def distance(a, b):
@@ -109,11 +109,13 @@ def majority_class(neighbor_ixs, classes):
 
         @return   value of the majority class 
     '''
+    
     neighbor_classes = []
     for n in neighbor_ixs:
-        neighbor_classes.append(classes[n])
+        neighbor_classes.append(classes[n][0])
     
-    return(max(set(neighbor_classes), key = neighbor_classes.count))
+    c = Counter(neighbor_classes)
+    return(c.most_common()[0][0])
 
 
 def predict_classification(test_data, training_data, target_list, k):
@@ -128,8 +130,12 @@ def predict_classification(test_data, training_data, target_list, k):
     '''
 
     neighbors = compute_nearest_neighbors(test_data, training_data, k)
-    predicted_class = majority_class(neighbors, target_list)
-    
+
+    predictions = [] 
+    for ix_test in range(0, len(test_data)):
+        predicted_class = majority_class(neighbors[ix_test], target_list)
+        predictions.append(predicted_class)
+
     return(predicted_class)
 
 
