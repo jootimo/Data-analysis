@@ -22,7 +22,7 @@ def loo_cv (features, labels, f_predict):
         training_labels = [row for i, row in enumerate(labels) if i != test_ix]
 
         prediction = f_predict([test_features], training_features, training_labels)
-        predictions.append(prediction)
+        predictions.append([prediction])
         
         #See if we guessed correctly
         actual = labels[test_ix][0]
@@ -114,7 +114,7 @@ def loo_cv_with_pairwise_filtering(features, labels, pairs, f_predict):
 
         #Do prediction with the function that was given as an argument
         prediction = f_predict([test_features], training_features_filtered, training_labels_filtered)
-        predictions.append(prediction)
+        predictions.append([prediction])
 
         #See if we guessed correctly
         actual = labels[test_ix][0]
