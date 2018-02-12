@@ -2,8 +2,7 @@ import knn
 import csv_parser
 
 from functools import partial   # Function argument binding
-from numpy import mean          # mean
-from scipy import stats         # z-score
+
 
 def loo_cv (features, labels, f_predict):
     '''
@@ -17,12 +16,27 @@ def loo_cv (features, labels, f_predict):
     '''
 
     predictions = []
+    misclassifications = 0
     for test_ix, test_features in enumerate(features):
         training_features = [row for i, row in enumerate(features) if i != test_ix]
         training_labels = [row for i, row in enumerate(labels) if i != test_ix]
+
         prediction = f_predict([test_features], training_features, training_labels)
         predictions.append(prediction)
+        
+        #See if we guessed correctly
+        actual = labels[test_ix][0]
+        if actual != prediction:
+            misclassifications += 1    
     
+
+    num_rows = len(features)
+    if num_rows != 0:
+        misclass_rate = float(misclassifications) / num_rows
+        print("Classifications: " + str(num_rows))
+        print("Misclassifications: " + str(misclassifications))
+        print("Misclassification rate: " + str(misclass_rate))
+
     c_ix = knn.c_index(labels, predictions)
     return(c_ix)
 
@@ -84,7 +98,7 @@ def loo_cv_with_pairwise_filtering(features, labels, pairs, f_predict):
     '''
 
     predictions = []
-
+    misclassifications = 0
     for test_ix, test_features in enumerate(features):
         #Potential training features and labels
         training_features = [row for i, row in enumerate(features) if i != test_ix]
@@ -101,6 +115,19 @@ def loo_cv_with_pairwise_filtering(features, labels, pairs, f_predict):
         #Do prediction with the function that was given as an argument
         prediction = f_predict([test_features], training_features_filtered, training_labels_filtered)
         predictions.append(prediction)
+
+        #See if we guessed correctly
+        actual = labels[test_ix][0]
+        if actual != prediction:
+            misclassifications += 1    
+    
+
+    num_rows = len(features)
+    if num_rows != 0:
+        misclass_rate = float(misclassifications) / num_rows
+        print("Classifications: " + str(num_rows))
+        print("Misclassifications: " + str(misclassifications))
+        print("Misclassification rate: " + str(misclass_rate))
 
     return(knn.c_index(labels, predictions))
         
@@ -124,8 +151,8 @@ f_predict = partial(knn.predict_classification, k=num_neighbors)
 
 #First perform normal leave-one-out cross-validation
 c_ix = loo_cv(features, labels, f_predict)
-print("\nc_index for loo_cv and knn with k = " + str(num_neighbors) + " was " + str(c_ix))
+print("c_index for loo_cv and knn with k = " + str(num_neighbors) + " was " + str(c_ix) + "\n")
 
 #Then the modified cross-validation that considers the protein pairs
 c_ix = loo_cv_with_pairwise_filtering(features, labels, pairs, f_predict)
-print("c_index for modified loo_cv and knn with k = " + str(num_neighbors) + " was " + str(c_ix) + "\n")
+print("c_index for modified loo_cv and knn with k = " + str(num_neighbors) + " was " + str(c_ix))
