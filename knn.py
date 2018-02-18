@@ -112,7 +112,7 @@ def majority_class(neighbor_ixs, classes):
     
     neighbor_classes = []
     for n in neighbor_ixs:
-        neighbor_classes.append(classes[n][0])
+        neighbor_classes.append(classes[n])
     
     c = Counter(neighbor_classes)
     return(c.most_common()[0][0])
