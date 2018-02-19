@@ -3,13 +3,22 @@ import knn
 import numpy as np              # Random numbers
 from functools import partial   # Function argument binding
 import scipy.stats as stats     # Correlation
-from operator import itemgetter
+from operator import itemgetter # Sorting list of pairs on first item
 import matplotlib               # Plotting
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 
 def random_X(num_rows, num_cols):
+    '''
+    Generate random data matrix with values in ]0,1[
+
+    @param  num_rows    number of rows to generate
+    @param  num_cols    number of cols to generate
+
+    @return 2-dimensional list
+    '''
+
     X = np.random.randn(num_rows , num_cols)
 
     X_aslist = np.ndarray.tolist(X)
@@ -17,6 +26,14 @@ def random_X(num_rows, num_cols):
     return(X_aslist)
 
 def random_Y(num_rows):
+    '''
+    Generate random label list with half its values being -1 and the other half 1 
+
+    @param  num_rows    Number of rows to generate
+
+    @return List of integers -1 and 1
+    '''
+    
     Ypos = np.ones(int(num_rows / 2))
     Yneg = -1 * np.ones(int(num_rows / 2 + num_rows % 2))
 
@@ -25,13 +42,13 @@ def random_Y(num_rows):
 
 def loo_cv (features, labels, f_predict):
     '''
-    Perform leave-one-out cross-validation, do classifications and report the c-index
+    Perform leave-one-out cross-validation, do classifications and report the accuracy
 
     @param  features    2d list of feature values
     @param  labels      Correct labels corresponding to rows in features
     @param  f_predict   Prediction function used for classifications
 
-    @return Concordance-index for the made predictions 
+    @return Accuracy of the made predictions 
     '''
 
     predictions = []
@@ -64,16 +81,19 @@ def loo_cv (features, labels, f_predict):
 
 num_rows = [20, 50, 100, 500]
 num_cols = 1
-
 num_neighbors = 3
 
 f_predict = partial(knn.predict_classification, k = num_neighbors)
 
 accuracies = []
+
+#Try different sized data
 for rows in num_rows:
     print("\nRows: " + str(rows))
 
     accuracies_of_this_round = []
+    
+    #Repeat test 100 times
     for i in range(100):
         X = random_X(rows, num_cols)
         Y = random_Y(rows)
@@ -85,7 +105,7 @@ for rows in num_rows:
     print("Accuracy mean: " + str(mean_accuracy))
     print("Accuracy variance: " + str(var_accuracy))
     
-    # How large fraction (in %) of the leave-one-out runs resulted in performance higher than 0.60? What about 0.70?
+    # How large a fraction (in %) of the leave-one-out runs resulted in performance higher than 0.60? What about 0.70?
     num_over_06 = 0
     num_over_07 = 0
     num_accuracies = len(accuracies_of_this_round)
@@ -120,6 +140,16 @@ plt.savefig("AccuracyHist.png")
 ################################
 
 def select_features(features, labels, num_selections):
+    '''
+    Get a feature matrix with a desired number of the features that correlate most to the labels.
+    Kendall tau coefficient is used.
+
+    @param  features        2D list of the feature values where to select
+    @param  labels          List of the corresponding labels          
+    @param  num_selections  How many features to select
+
+    @return 2D list of feature values
+    '''
 
     #List of correlation-column index pairs
     correlations = []
@@ -151,13 +181,14 @@ def select_features(features, labels, num_selections):
 
 def loo_cv_with_feat_selection (features, labels, num_features, f_predict):
     '''
-    Perform leave-one-out cross-validation, do classifications and report the c-index
+    Select the best features from a dataset, perform leave-one-out cross-validation,
+    do classifications and report the accuracy.
 
     @param  features    2d list of feature values
     @param  labels      Correct labels corresponding to rows in features
     @param  f_predict   Prediction function used for classifications
 
-    @return Concordance-index for the made predictions 
+    @return Accuracy of the made predictions 
     '''
 
     predictions = []
@@ -177,6 +208,7 @@ def loo_cv_with_feat_selection (features, labels, num_features, f_predict):
         if actual == prediction:
             correct_predictions += 1    
     
+    #Compute accuracy of predictions
     num_rows = len(features)
     if num_rows != 0:
         accuracy = float(correct_predictions) / num_rows
@@ -197,13 +229,15 @@ for i in range(100):
 
     X = random_X(num_rows, num_cols)
     Y = random_Y(num_rows)
-
-    X_selected = select_features(X, Y, 10)
     f_predict = partial(knn.predict_classification, k = 3)
 
+    #How feature selection should be done. New selections on each round of cross-validation
+    accuracies_right.append(loo_cv_with_feat_selection(X, Y, 10, f_predict))
+
+    # The wrong way to do feature selection: as a preprocessing step.
+    X_selected = select_features(X, Y, 10) 
     accuracies_wrong.append(loo_cv(X_selected, Y, f_predict))
 
-    accuracies_right.append(loo_cv_with_feat_selection(X, Y, 10, f_predict))
 
 print("Mean accuracy of the wrong way: " + str(np.mean(accuracies_wrong)))
 print("\nMean accuracy of the right way: " + str(np.mean(accuracies_right)))
