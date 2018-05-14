@@ -1,0 +1,365 @@
+\documentclass[a4paper]{article}
+
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+
+%% Sets page size and margins
+\usepackage[a4paper,top=3cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+
+%% Useful packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{algorithm2e}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\setlength{\parindent}{0pt}
+
+
+\title{Applications of Data Analysis 2018\\Excercise 2}
+\author{Timo Heinonen\\509445\\tijuhe@utu.fi}
+
+\begin{document}
+\maketitle
+
+\section{Description of the problem}
+The goal of this data analysis task was to create a model that predicts metal concentrations in water samples. The data had 3 input attributes, modulators 1 through 3, from which 3 output attributes, amounts of cadmium, lead and combined, were to be predicted. \\
+
+The data was first standardized with z-score standardization. The data contained 4 measurements from each sample, so in addition to leave-one-out cross-validation, leave-four-out was tested. Predictions for each output attribute were made with k-nearest-neighbor search, with $k = 1,2,...,5$. I used the k-nearest-neighbors utilities from the previous exercise after some changes to make them useful for regression. \\
+
+The model was evaluated by computing the C-index for each attribute by comparing the predictions to the actual measured values. The C-index evaluation does not measure absolute errors, but misorders in the data 
+\\
+
+I copied the C-index algorithm from the lecture slides and used the z-score standardization from the \emph{scipy} package.
+
+\section{Algorithm}
+
+\begin{algorithm}[H]
+ \KwData{Water Data}
+ \KwResult{C-index values for predictions of attributes c-total, cd and pb}
+ 
+ \vspace*{0,5cm}
+
+ Standardize data with z-score\\
+ Divide data into \emph{folds} of length 4 or 1\\
+ 
+ 
+ $\emph{c\_total\_predictions} \leftarrow \emptyset$\\
+ $\emph{cd\_predictions} \leftarrow \emptyset$\\
+ $\emph{pb\_predictions} \leftarrow \emptyset$\\
+
+ 
+ \For{\emph{each} fold}{
+ 	\emph{test\_set} $\leftarrow$ \emph{fold}\\
+ 	\emph{training\_set} $\leftarrow$ \{ All data $\backslash$ \emph{test\_set} \}\\
+ 	Compute $k$ nearest neighbors in \emph{training\_set} for each object in \emph{test\_set} \\
+ 	Add the neighbors' mean c-total value to \emph{c\_total\_predictions}\\
+    Add the neighbors' mean cd value to \emph{cd\_predictions}\\
+    Add the neighbors' mean pb value to \emph{pb\_predictions}\\
+	
+ }
+ Compute c-indices for c-total, cd and pb predictions by comparing them to real outputs
+ 
+\end{algorithm}
+
+\section{Results}
+The tables below show the C-index values of the cross-validated predictions for different values of $k$. As suspected, the leave-one-out cross-validation gives an optimistic evaluation compared to leave-four-out. In leave-one-out, measurements from the same sample are included in both the training and test data. That is why the C-index values from the leave-four-out cross-validation are more realistic in evaluating the model. It seems that in this case, $k = 2$ is the optimal number of neighbors. The C-index values are well over $0.5$, so I am quite pleased with the predictions.
+\vspace*{1cm}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l|l|l|l}
+k & c-total & cd & pb \\\hline
+1 & 0.90809 & 0.91359 & 0.87959\\
+2 & 0.91886 & \textbf{0.92050} & \textbf{0.88913}\\
+3 & \textbf{0.92054} & 0.91247 & 0.88473\\
+4 & 0.91150 & 0.88806 & 0.86871\\
+5 & 0.89627 & 0.86664 & 0.86152\\
+\end{tabular}
+
+\caption{C-indices with leave \textbf{one} out cross-validation}
+\end{table}
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l|l|l|l}
+k & c-total & cd & pb \\\hline
+1 & 0.79789 & \textbf{0.72080} & 0.74199\\
+2 & \textbf{0.80547} & 0.70150 & \textbf{0.76671}\\
+3 & 0.80058 & 0.70197 & 0.75682\\
+4 & 0.79594 & 0.69797 & 0.75211\\
+5 & 0.79692 & 0.69891 & 0.74905\\
+\end{tabular}
+
+\caption{C-indices with leave \textbf{four} out cross-validation}
+\end{table}
+
+\newpage
+\section{Source code}
+Below is listed the source code of the program. For syntax highlighting, please visit my \href{https://github.com/jootimo/ml_repo}{GitHub page}. File $\href{https://github.com/jootimo/ml_repo/blob/master/water_analysis.py}{water\_analysis.py}$ handles the parsing of the data file, cross-validations and the C-index computations. $\href{https://github.com/jootimo/ml_repo/blob/master/knn.py}{knn.py}$ was written for the previous exercise and contains utilities for the k nearest neighbors algorithm.\\\\
+
+
+\renewcommand{\sfdefault}{pcr}
+\fontfamily{pcr}\selectfont
+
+\textbf{water\_analysis.py:}\\
+\footnotesize
+\begin{lstlisting}
+import knn 
+from scipy import stats
+from numpy import mean
+
+DATA_FILENAME = "data/Water_data.csv"
+
+#Inputs
+IX_MOD1         = 0
+IX_MOD2         = 1
+IX_MOD3         = 2
+
+#Outputs
+IX_C_TOTAL      = 0
+IX_CD           = 1
+IX_PB           = 2
+
+
+# Open file with name filename and parse comma separated values a into 2-d list
+#
+# @param    filename
+def open_and_parse(filename):
+    data = []
+
+    with open(filename, "r") as filestream:
+
+        for line in iter(filestream.readline, ''):
+            line = list(line.split(','))
+
+            #First row is headers, skip it
+            if line[0] == "Mod1":
+                continue
+
+            #Parse rows into lists
+            for i in range(0, len(line)):
+                for char in range(0, len(line[i])):
+
+                    #Remove newline characters
+                    if type(line[i]) == "str":
+                        line[i].replace('\n', '')
+
+                    #Cast to floats
+                    line[i] = float(line[i])
+
+            data.append(line)
+
+    return data
+
+# Compute C-index for list of predictions
+#
+# @param    true_values         True numeric target values for the data
+# @param    predicted_values    Predicted target values
+def c_index(true_values, predicted_values):
+    n = 0
+    h_sum = 0.0
+
+    for i in range(0, len(true_values)):
+        t = true_values[i]
+        p = predicted_values[i]
+        
+        for j in range(i + 1, len(true_values)):
+            nt = true_values[j]
+            np = predicted_values[j]
+        
+            if (t != nt):
+                n += 1
+                
+                if ((p < np and t < nt) or (p > np and t > nt)):
+                    h_sum += 1
+                elif ((p < np and t > nt) or (p > np and t < np)):
+                    h_sum += 0
+                elif (p == np):
+                    h_sum += 0.5
+    
+    c_idx = h_sum / n
+    return c_idx
+
+# Perform k-nearest-neighbors search with k-fold cross-validation
+# and print c-index for each output attribute
+#
+# @param    inputs      Input attribute values in the data
+# @param    outputs     Outputs resulted from inputs
+# @param    num_folds   To how many folds the data will be divided
+# @param    k           Number of neighbors to search
+#
+def regression_with_cross_validation_and_c_index(inputs, outputs, num_folds, k):
+    
+    c_total_predictions = []
+    cd_predictions = []
+    pb_predictions = []
+
+    for fold in range(0, num_folds):
+
+        #How many data objects in each fold
+        len_fold = int(len(inputs) / num_folds)
+
+        #Where is the test set placed in the data
+        ix_test_first = fold * len_fold
+        ix_test_one_past_last = ix_test_first + len_fold
+
+        test_set = inputs[ix_test_first : ix_test_one_past_last]
+
+        training_set = inputs[IX_MOD1 : ix_test_first] + inputs[ix_test_one_past_last :len(inputs)]
+        training_set_outputs = (outputs[IX_C_TOTAL : ix_test_first] 
+                            + outputs[ix_test_one_past_last :len(inputs)])
+
+        #Get list of nearest neighbor indices for each object in the test set
+        neighbors = knn.compute_nearest_neighbors(test_set, training_set, k)
+
+        for i in range(0, len_fold):
+
+            #Get the neighbors' output values 
+            neighbors_c_totals = []
+            neighbors_cds = []
+            neighbors_pbs = []
+            for n in neighbors:
+                neighbors_c_totals.append(float(training_set_outputs[n][IX_C_TOTAL]))
+                neighbors_cds.append(float(training_set_outputs[n][IX_CD]))
+                neighbors_pbs.append(float(training_set_outputs[n][IX_PB]))
+
+            #Mean value of the neigbors is the prediction
+            estimate_c_total = mean(neighbors_c_totals)
+            estimate_cd = mean(neighbors_cds)
+            estimate_pb = mean(neighbors_pbs)
+             
+            #Store the predictions
+            c_total_predictions.append(estimate_c_total)
+            cd_predictions.append(estimate_cd)
+            pb_predictions.append(estimate_pb)
+
+    c_ix_c_total = c_index([row[IX_C_TOTAL] for row in outputs], c_total_predictions)
+    c_ix_cd = c_index([row[IX_CD] for row in outputs], cd_predictions)
+    c_ix_pb = c_index([row[IX_PB] for row in outputs], pb_predictions)
+
+    print("C-index for c_totals: " + str(c_ix_c_total))
+    print("C-index for cd: " + str(c_ix_cd))
+    print("C-index for pb: " + str(c_ix_pb))
+
+
+
+#Open file and read data into memory
+data = open_and_parse(DATA_FILENAME)
+
+data_standardized = stats.zscore(data)
+
+#Partition data into inputs and outputs
+inputs = []
+outputs = []
+for row in data_standardized:
+    inputs.append(list(row[IX_MOD1:IX_MOD3 + 1]))
+    outputs.append(list(row[len(inputs[0]) + IX_C_TOTAL : len(inputs[0]) + IX_PB + 1]))
+
+#Data contains 4 measurements from each sample, 
+#fold those measurements together
+num_folds = int(len(data) / 4)
+
+#Perform knn with k-fold cross-validation and print c-index for k = 1,2,...,5
+for k in range(1, 6):
+    print("C-index score for k = " + str(k) + " with " + str(num_folds) + 
+        "-fold cross-validation:")
+    regression_with_cross_validation_and_c_index(inputs, outputs, num_folds, k)
+    print("")
+
+for k in range(1, 6):
+    print("C-index score for k = " + str(k) + " with " + 
+        "leave-one-out cross-validation:")
+    regression_with_cross_validation_and_c_index(inputs, outputs, len(data), k)
+    print("")
+
+\end{lstlisting}
+
+\vspace*{1cm}
+\normalsize
+\textbf{knn.py:}\\
+\footnotesize
+\begin{lstlisting}
+
+from math import sqrt
+from operator import itemgetter
+
+# Calculate the Euclidean distance between data points a and b
+#
+# @param    a   list of attribute values
+# @param    b   list of attribute values
+#
+# @return   distance between a and b or -1 if lists have different lenghts 
+def distance(a, b):
+    len_a = len(a)
+    len_b = len(b)
+    
+    if len_a != len_b:
+        return(-1)
+    else:
+        dist = 0
+        for i in range(0, len_a):
+            dist += (a[i] - b[i]) ** 2
+
+        return sqrt(dist)
+
+
+# Compute distances from each data point in training data to that in test data
+#
+# @param    training_data  list of numerical data rows, excluding the attribute to predict
+# @param    test_data      list of the data object to calculate distances to
+#
+# @return   distance list
+def compute_distances(test_data, training_data):
+
+    distances = []
+    
+    for i in range(0, len(test_data)):
+        row = []
+        for j in range(0, len(training_data)):
+            dist = distance(test_data[i], training_data[j])
+            row.append(dist)
+
+        distances.append(row)
+
+    return(distances)
+
+# Compute nearest neighbors of the given data object
+#
+# @param    test_data       data object to compute distances to
+# @param    training_data   data that the distances are computed to
+# @param    num_neighbors   value of k
+#
+# @return   Indices of num_neighbors nearest neighbors of test_data in training_data
+def compute_nearest_neighbors(test_data, training_data, num_neighbors):
+    #Compute distances to test_data
+    distances = compute_distances(test_data, training_data)
+    
+
+    neighbors = []
+    for ix_test_obj in range(0, len(test_data)):
+        #Iterate over the distance list and create list of (row index, distance) pairs
+        ixs_and_distances = []
+        for i in range(0, len(distances[ix_test_obj])):
+            ixs_and_distances.append([ i, distances[ix_test_obj][i] ])
+
+        #Sort the list on distances and include only first num_neighbors elements
+        ixs_and_distances.sort(key = itemgetter(1))
+        k_nearest = ixs_and_distances[0 : num_neighbors]
+
+        #Only return neighbor indices in training_data
+        for n in k_nearest:
+            neighbors.append(n[0])
+
+    return(neighbors)
+
+
+\end{lstlisting}
+
+
+\end{document}
